@@ -5,7 +5,8 @@
 
 /* Change this to your Slack bot's OAuth token,
 * found in the Integrations tab */
-var SLACK_TOKEN = require('./config').slackToken;
+var SLACK_TOKEN = process.env.slackToken;
+var CHANNEL = process.env.channel;
 
 var https = require('https');
 var  _ws = require('ws');
@@ -15,7 +16,7 @@ var counter = 1;
 var ws, slackID;
 
 https.get("https://slack.com/api/channels.create?token=" 
-+ SLACK_TOKEN + "&name=trump", function(res) {
++ SLACK_TOKEN + "&name=donald_trump", function(res) {
     var data = "";
     res.on('data', function(chunk) {
         data += chunk;
@@ -41,7 +42,7 @@ https.get("https://slack.com/api/rtm.start?token=" + SLACK_TOKEN, function(res) 
         slackID = rtm.self.id;
         console.log("Logging into " + rtm.team.name + "'s Slack...");
         ws.on('open', function() {
-            goTrump(rtm.team.name, rtm.team.prefs.default_channels[0]);
+            goTrump(rtm.team.name, CHANNEL);
         });
     })
 });
