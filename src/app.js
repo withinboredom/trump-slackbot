@@ -134,6 +134,8 @@ function handleMessage(counter, event) {
 function getResponse(message) {
     for(var i = 0; i < r.length; i++) {
         for(var j = 0; j < r[i].keywords.length; j++) {
+            if (message === undefined) return;
+            
             if(message.toLowerCase().indexOf(r[i].keywords[j]) != -1) {
                 console.log("Responding to message: " + message);
                 return r[i].messages[Math.floor(Math.random() * r[i].messages.length)];
