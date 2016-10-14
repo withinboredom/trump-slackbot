@@ -51,13 +51,13 @@ https.get("https://slack.com/api/rtm.start?token=" + SLACK_TOKEN, function(res) 
 
 function goTrump(teamName, channelID) {
     console.log("Donald Trump has joined " + teamName + "!");
-    ws.send(JSON.stringify({
+    /*ws.send(JSON.stringify({
         "id": counter,
         "type": "message",
         "channel": channelID,
         "text": "LET'S MAKE " + teamName.toUpperCase() + " GREAT AGAIN."
     }));
-    counter++;
+    counter++;*/
 
     console.log("Listening for new messages...");
     ws.on('message', function(data) {

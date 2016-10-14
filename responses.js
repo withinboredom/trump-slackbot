@@ -7,7 +7,14 @@ module.exports = [
             "The U.S. has become a dumping ground for everybody else’s problems.",
             "And our real unemployment is anywhere from 18 to 20 percent. Don't believe "
             + "the 5.6. Don't believe it.",
-            "I will be the greatest jobs president that God ever created."
+            "I will be the greatest jobs president that God ever created.",
+            "I think of myself as a young guy, but I’m not so young anymore. And I’ve been around for a long time. And it just seems that the economy does better under the Democrats than the Republicans."
+        ]
+    },
+    {
+        keywords: ["cold", "warm", "global"],
+        messages: [
+            "It’s freezing and snowing in New York – we need global warming!"
         ]
     },
     {
@@ -103,7 +110,8 @@ module.exports = [
             "I try to learn from the past, but I plan for the future by focusing exclusively on the present."
             + "That's where the fun is.",
             "You have to think anyway, so why not think big?",
-            "In the end, you're measured not by how much you undertake but by what you finally accomplish."
+            "In the end, you're measured not by how much you undertake but by what you finally accomplish.",
+            "I’ll tell you one thing, this is a very good looking group of people here. Could I just go around so I know who the hell I’m talking to?"
         ]
     },
     {
@@ -175,6 +183,7 @@ module.exports = [
         "keywords": ["twitter", "social"],
         "messages": [
             "My Twitter account has over 3.5 million followers. Beat that!",
+            "My Twitter has become so powerful that I can actually make my enemies tell the truth."
         ]
     },
     {
@@ -190,7 +199,8 @@ module.exports = [
             + "United States. There's never been a Secretary of State so bad as Hillary. "
             + "The world blew up around us. We lost everything, including all relationships. "
             + "There wasn't one good thing that came out of that administration or her being "
-            + "Secretary of State."
+            + "Secretary of State.",
+            "Hillary is smart, tough and a very nice person, and so is her husband. Bill Clinton was a great President. They are fine people. Hillary was roughed up by the media, and it was a tough campaign for her, but she’s a great trooper. Her history is far from being over."
         ]
     },
     {
@@ -201,14 +211,6 @@ module.exports = [
             + "players with these really long putters, because they can't sink three-footers anymore. And, I"
             + "hate it. I am a traditionalist. I have so many fabulous friends who happen to be gay, but I"
             + " am a traditionalist."
-        ]
-    },
-    {
-        "keywords": ["african", "black"],
-        "messages": [
-            "Black guys counting my money! I hate it. The only kind of people I "
-            + "want counting my money are little short guys that wear yarmulkes every "
-            + "day."
         ]
     },
     {
