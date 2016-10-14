@@ -5,8 +5,7 @@
 
 /* Change this to your Slack bot's OAuth token,
 * found in the Integrations tab */
-var SLACK_TOKEN = process.env.slackToken;
-var CHANNEL = process.env.channel;
+const SLACK_TOKEN = process.env.slackToken;
 
 var https = require('https');
 var  _ws = require('ws');
@@ -14,6 +13,9 @@ var r = require('./responses');
 
 var counter = 1;
 var ws, slackID;
+
+let inChannel = [];
+var hunted = null;
 
 https.get("https://slack.com/api/channels.create?token=" 
 + SLACK_TOKEN + "&name=donald_trump", function(res) {
@@ -42,15 +44,20 @@ https.get("https://slack.com/api/rtm.start?token=" + SLACK_TOKEN, function(res) 
         slackID = rtm.self.id;
         console.log("Logging into " + rtm.team.name + "'s Slack...");
         ws.on('open', function() {
-            goTrump(rtm.team.name, CHANNEL);
+            rtm.channels.forEach((channel) => {
+                if (channel.is_member) {
+                    console.log(`Donald Trump has joined ${channel.id}!`);
+                    inChannel.push(channel.id);
+                }
+            });
+            goTrump();
         });
     })
 });
 
 
 
-function goTrump(teamName, channelID) {
-    console.log("Donald Trump has joined " + teamName + "!");
+function goTrump() {
     /*ws.send(JSON.stringify({
         "id": counter,
         "type": "message",
@@ -62,16 +69,66 @@ function goTrump(teamName, channelID) {
     console.log("Listening for new messages...");
     ws.on('message', function(data) {
         var event = JSON.parse(data);
-        if(event.type === "message" && event.user !== slackID) {
-            ws.send(JSON.stringify({
-                "id": counter,
-                "type": "message",
-                "channel": event.channel,
-                "text": getResponse(event.text)
-            }))
+        if (event.type === "message" && event.user !== slackID) {
+            counter = handleMessage(counter, event);
         }
-        counter++;
+        if (event.type === "channel_joined") {
+            console.log(`Donald Trump has joined ${event.channel.id}!`);
+            inChannel.push(event.channel.id);
+        }
+        if (event.type === "channel_left") {
+            console.log(`Donald Trump has left ${event.channel.id}`);
+            inChannel = inChannel.filter((t) => t !== event.channel.id);
+        }
+        if (event.type === "user_typing") {
+            console.log('I hear someone typing...');
+            counter = handleWrong(counter, event)
+        }
     });
+}
+
+function handleWrong(counter, event) {
+    const should = Math.floor((Math.random() * 100) + 1);
+    const maxHunt = 2;
+    if (should === 10 && hunted === null) {
+        ws.send(JSON.stringify({
+            id: counter,
+            type: 'message',
+            channel: event.channel,
+            text: "_wrong_"
+        }));
+        console.log(`Hunting ${event.user}`);
+        hunted = {
+            user: event.user,
+            channel: event.channel,
+            count: 1
+        };
+        return counter + 1;
+    }
+    if (hunted !== null && hunted.user === event.user && hunted.channel === event.channel && hunted.count < maxHunt) {
+        ws.send(JSON.stringify({
+            id: counter,
+            type: 'message',
+            channel: event.channel,
+            text: "_wrong_"
+        }));
+        hunted.count += 1;
+        if (hunted.count >= maxHunt) {
+            hunted = null;
+            console.log(`${event.user} has been hunted to death`);
+        }
+        return counter + 1;
+    }
+}
+
+function handleMessage(counter, event) {
+    ws.send(JSON.stringify({
+        "id": counter,
+        "type": "message",
+        "channel": event.channel,
+        "text": getResponse(event.text)
+    }));
+    return counter + 1;
 }
 
 function getResponse(message) {
