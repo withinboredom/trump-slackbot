@@ -7,15 +7,17 @@
 * found in the Integrations tab */
 const SLACK_TOKEN = process.env.slackToken;
 
-var https = require('https');
-var  _ws = require('ws');
-var r = require('./responses');
+const https = require('https');
+const  _ws = require('ws');
+const r = require('./responses');
 
-var counter = 1;
-var ws, slackID;
+let counter = 1;
+let ws, slackID;
 
 let inChannel = [];
-var hunted = null;
+let hunted = null;
+const channelThrottle = new Map();
+const throttleMs = 20000;
 
 https.get("https://slack.com/api/channels.create?token=" 
 + SLACK_TOKEN + "&name=donald_trump", function(res) {
@@ -70,6 +72,7 @@ function goTrump() {
     ws.on('message', function(data) {
         var event = JSON.parse(data);
         if (event.type === "message" && event.user !== slackID) {
+
             counter = handleMessage(counter, event);
         }
         if (event.type === "channel_joined") {
@@ -122,12 +125,19 @@ function handleWrong(counter, event) {
 }
 
 function handleMessage(counter, event) {
+    // don't flood a channel
+    if (channelThrottle.has(event.channel) && (new Date()) - channelThrottle.get(event.channel) <= throttleMs) {
+        console.log(`Got throttled in ${event.channel}...`);
+        return counter;
+    }
+
     ws.send(JSON.stringify({
         "id": counter,
         "type": "message",
         "channel": event.channel,
         "text": getResponse(event.text)
     }));
+    channelThrottle.set(event.channel, new Date());
     return counter + 1;
 }
 
@@ -135,7 +145,7 @@ function getResponse(message) {
     for(var i = 0; i < r.length; i++) {
         for(var j = 0; j < r[i].keywords.length; j++) {
             if (message === undefined) return;
-            
+
             if(message.toLowerCase().indexOf(r[i].keywords[j]) != -1) {
                 console.log("Responding to message: " + message);
                 return r[i].messages[Math.floor(Math.random() * r[i].messages.length)];
