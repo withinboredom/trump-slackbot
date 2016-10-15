@@ -1,0 +1,16 @@
+FROM node:slim
+
+ENV YARN_VER=0.15.1
+
+MOUNT /root/
+
+COPY ./src /app
+COPY ./package.json /app/package.json
+COPY ./yarn.lock /app/yarn.lock
+WORKDIR /app
+
+RUN npm install -g yarn@$YARN_VER && yarn install && rm -rf /usr/local/lib/node_modules/yarn
+
+ATTACH ["/bin/bash"]
+CMD ["npm","start"]
+PUSH withinboredom/trumpd:latest

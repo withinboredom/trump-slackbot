@@ -17,20 +17,10 @@ let ws, slackID;
 let inChannel = [];
 let hunted = null;
 const channelThrottle = new Map();
-const throttleMs = 20000;
-
-https.get("https://slack.com/api/channels.create?token=" 
-+ SLACK_TOKEN + "&name=donald_trump", function(res) {
-    var data = "";
-    res.on('data', function(chunk) {
-        data += chunk;
-    }).on('error', function(err) {
-        console.log("Failed to create #trump channel. Verify "
-            + "that you added your API key.");
-    }).on('end', function() {
-        console.log(data);
-    });
-});
+let throttleMs = 20000;
+let maxHunt = 2;
+let doHunt = false;
+let me = null;
 
 https.get("https://slack.com/api/rtm.start?token=" + SLACK_TOKEN, function(res) {
     console.log("Connecting to Slack API...");
@@ -42,22 +32,25 @@ https.get("https://slack.com/api/rtm.start?token=" + SLACK_TOKEN, function(res) 
         + "Did you put in your Slack bot's token in app.js?");
     }).on('end', function() {
         var rtm = JSON.parse(data);
+        me = rtm.self;
         ws = new _ws(rtm.url);
         slackID = rtm.self.id;
         console.log("Logging into " + rtm.team.name + "'s Slack...");
         ws.on('open', function() {
             rtm.channels.forEach((channel) => {
                 if (channel.is_member) {
-                    console.log(`Donald Trump has joined ${channel.id}!`);
+                    console.log(`Donald Trump is in channel: ${channel.id}!`);
                     inChannel.push(channel.id);
                 }
+            });
+            rtm.groups.forEach((group) => {
+                console.log(`Donald Trump is in group: ${group.id}`);
+                inChannel.push(group.id);
             });
             goTrump();
         });
     })
 });
-
-
 
 function goTrump() {
     /*ws.send(JSON.stringify({
@@ -72,7 +65,6 @@ function goTrump() {
     ws.on('message', function(data) {
         var event = JSON.parse(data);
         if (event.type === "message" && event.user !== slackID) {
-
             counter = handleMessage(counter, event);
         }
         if (event.type === "channel_joined") {
@@ -92,35 +84,41 @@ function goTrump() {
 
 function handleWrong(counter, event) {
     const should = Math.floor((Math.random() * 100) + 1);
-    const maxHunt = 2;
-    if (should === 10 && hunted === null) {
-        ws.send(JSON.stringify({
-            id: counter,
-            type: 'message',
-            channel: event.channel,
-            text: "_wrong_"
-        }));
+    if ((doHunt || should === 10) && hunted === null) {
+        if (channelThrottle.has(event.channel) && (new Date()) - channelThrottle.get(event.channel) <= throttleMs) {
+            console.log(`Got throttled doing an interruption in ${event.channel}...`);
+            return counter;
+        }
+
+        counter = say(event.channel, counter, "_wrong_");
+
         console.log(`Hunting ${event.user}`);
         hunted = {
             user: event.user,
             channel: event.channel,
             count: 1
         };
-        return counter + 1;
+
+        channelThrottle.set(event.channel, new Date());
+        return counter;
     }
     if (hunted !== null && hunted.user === event.user && hunted.channel === event.channel && hunted.count < maxHunt) {
-        ws.send(JSON.stringify({
-            id: counter,
-            type: 'message',
-            channel: event.channel,
-            text: "_wrong_"
-        }));
+        if (channelThrottle.has(event.channel) && (new Date()) - channelThrottle.get(event.channel) <= throttleMs) {
+            console.log(`Got throttled doing an interruption in ${event.channel}...`);
+            return counter;
+        }
+
+        counter = say(event.channel, counter, "_wrong_");
+
         hunted.count += 1;
         if (hunted.count >= maxHunt) {
             hunted = null;
+            doHunt = false;
             console.log(`${event.user} has been hunted to death`);
         }
-        return counter + 1;
+
+        channelThrottle.set(event.channel, new Date());
+        return counter;
     }
 }
 
@@ -131,14 +129,57 @@ function handleMessage(counter, event) {
         return counter;
     }
 
+    const mention = `<@${me.id}>`;
+
+    switch(true) {
+        case event.text.startsWith(`${mention} throttle`):
+            // set the throttle dynamically
+            let ms = event.text.split(' ')[2];
+            if (Number.isSafeInteger(Number.parseInt(ms))) {
+                throttleMs = Number.parseInt(ms);
+                counter = say(event.channel, counter, "But we need -- Lester, we need law and order.")
+            }
+            else {
+                counter = say(event.channel, counter, "Typical politician. All talk, no action. Sounds good, doesn't work. Never going to happen.")
+            }
+            break;
+        case event.text.startsWith(`${mention} interrupt`):
+            // hunt the next person to start typing...
+            let user = event.text.split(' ')[2];
+            if (user !== undefined || user !== null) {
+               hunted = {
+                   user: user.substring(2, user.length - 1),
+                   channel: event.channel,
+                   count: 0
+               }
+            }
+            doHunt = true;
+            console.log('Interrupting the next person to speak');
+            break;
+        case event.text.startsWith(`${mention} never give up`):
+            ms = event.text.split(' ')[4];
+            if (Number.isSafeInteger(Number.parseInt(ms))) {
+                maxHunt = ms;
+            }
+            console.log(`Set max interruptions to ${maxHunt}`);
+            break;
+        default:
+            counter = say(event.channel, counter, getResponse(event.text));
+            channelThrottle.set(event.channel, new Date());
+            break;
+    }
+
+    return counter;
+}
+
+function say(channel, mId, message) {
     ws.send(JSON.stringify({
-        "id": counter,
+        "id": mId,
         "type": "message",
-        "channel": event.channel,
-        "text": getResponse(event.text)
+        "channel": channel,
+        "text": message
     }));
-    channelThrottle.set(event.channel, new Date());
-    return counter + 1;
+    return mId + 1;
 }
 
 function getResponse(message) {
